@@ -1,0 +1,19 @@
+version: "3"
+services:
+  ossfs:
+    build: .
+    image: yodeng/ossfs:latest
+    container_name: ossfs-docker
+    restart: always
+    cap_add:
+      - SYS_ADMIN
+    devices:
+      - /dev/fuse
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      ACCESS_KEY: xxx
+      ACCESS_SECRET: xxx
+      OSS_URL: http://oss-cn-beijing.aliyuncs.com
+      OSS_BUCKET: xxx
+      MNT_POINT: /data/oss/
