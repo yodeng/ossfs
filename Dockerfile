@@ -1,24 +1,29 @@
-FROM alpine:3.10 AS builder
-ENV OSSFS_VERSION v1.80.6
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories
-RUN apk --update add fuse alpine-sdk automake autoconf libxml2-dev fuse-dev curl-dev
-RUN wget -qO- https://github.com.cnpmjs.org/aliyun/ossfs/archive/$OSSFS_VERSION.tar.gz |tar xz
-RUN cd ossfs-1.80.6 \
-  && ./autogen.sh \
-  && ./configure --prefix=/usr \
-  && make \
-  && make install
+FROM base-image:v1
 
-FROM alpine:3.10
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/' /etc/apk/repositories
-RUN apk --update add fuse curl libxml2 openssl libstdc++ libgcc && rm -rf /var/cache/apk/* 
-ENV OSSFS_VERSION v1.80.6
-COPY --from=builder /usr/bin/ossfs /usr/bin/ossfs
-COPY mount.sh .
+ENV PASSWD=123456
+
 ENV OSS_URL http://oss-cn-beijing-internal.aliyuncs.com
 ENV OSS_BUCKET bucket-name
-ENV OSSFS_OPTIONS -o allow_other -o umask=007
-ENV MNT_POINT /data/ossfs
+ENV OSSFS_OPTIONS -o allow_other -o umask=777
+ENV MNT_POINT /share/oss
 ENV ACCESS_KEY changeme
 ENV ACCESS_SECRET changeme
-CMD ["/bin/sh", "/mount.sh"]
+
+RUN yum -y install passwd openssl openssh-server net-tools wget vim
+
+RUN ssh-keygen -q -t rsa -b 2048 -f /etc/ssh/ssh_host_rsa_key -N ''\
+    && ssh-keygen -q -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' \
+    && ssh-keygen -t dsa -f /etc/ssh/ssh_host_ed25519_key -N ''
+
+RUN sed -i 's/#PermitRootLogin/PermitRootLogin/g' /etc/ssh/sshd_config \
+    && echo $PASSWD | passwd --stdin root \
+    && echo "export PATH=$PATH:\$PATH" >> /etc/bashrc
+
+ADD http://gosspublic.alicdn.com/ossfs/ossfs_1.80.6_centos7.0_x86_64.rpm .
+RUN yum -y install ossfs_1.80.6_centos7.0_x86_64.rpm \
+    && rm ossfs_1.80.6_centos7.0_x86_64.rpm
+
+COPY mountAndsshd.sh /usr/sbin/mountAndsshd.sh
+
+CMD ["/bin/sh", "/usr/sbin/mountAndsshd.sh"]
+

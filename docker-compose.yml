@@ -2,8 +2,8 @@ version: "3"
 services:
   ossfs:
     build: .
-    image: yodeng/ossfs:latest
-    container_name: ossfs-docker
+    image: yodeng/creatimage:latest
+    container_name: creatimage
     restart: always
     cap_add:
       - SYS_ADMIN
@@ -16,4 +16,4 @@ services:
       ACCESS_SECRET: xxx
       OSS_URL: http://oss-cn-beijing.aliyuncs.com
       OSS_BUCKET: xxx
-      MNT_POINT: /data/oss/
+      MNT_POINT: /share/oss/
